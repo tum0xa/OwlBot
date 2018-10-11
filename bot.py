@@ -1,9 +1,12 @@
+import requests
+
 import telebot
 from telebot.types import Message
 from telebot import apihelper
 
 
-PROXY = 'https://user:password@188.40.149.69:36941'
+PROXY = 'https://user:password@54.36.109.28:3128'
+
 TOKEN = '698617737:AAGBqrx8VlE7aMa7KWQGBZdfPWHuKUrCDwM'
 ACCEPT = 'подтверди'
 JOKE = '''
@@ -34,7 +37,7 @@ HELP_TEXT = '''
 '''
 
 apihelper.proxy = {'https': PROXY}
-
+proxies = apihelper.proxy
 bot = telebot.TeleBot(TOKEN)
 
 
@@ -55,10 +58,12 @@ def send_welcome(message: Message):
     chat_id = message.chat.id
     bot.send_message(chat_id, "Спокойной ночи! Угу.")
 
+
 @bot.message_handler(commands=['help'])
 def send_welcome(message: Message):
     chat_id = message.chat.id
     bot.send_message(chat_id, HELP_TEXT)
+
 
 @bot.message_handler(func=lambda message: True)
 def reply_accept(message: Message):
@@ -67,6 +72,34 @@ def reply_accept(message: Message):
         bot.send_message(chat_id, 'Подтверждаю!')
     else:
         bot.send_message(chat_id, 'Угу')
+
+
+@bot.message_handler(content_types=['sticker'])
+def save_sticker(message: Message):
+
+    chat_id = message.chat.id
+
+    sticker_str = str(message.sticker)
+    sticker = eval(sticker_str)  # type dict
+
+    file_id = sticker['file_id']
+    emoji = sticker['emoji']
+    file_info = bot.get_file(file_id)
+    file_path_list = file_info.file_path.split('.')
+    ext = file_path_list[len(file_path_list)-1]
+
+    sticker_resp = requests.get(f'https://api.telegram.org/file/bot{TOKEN}/{file_info.file_path}', proxies=proxies)
+
+    with open('.'.join([file_id, ext]), 'wb') as sticker_file:
+        sticker_file.write(sticker_resp.content)
+
+    with open('.'.join([file_id, ext]), 'rb') as sticker_file:
+        bot.send_message(chat_id, f'{emoji}')
+        bot.send_photo(chat_id, sticker_file)
+
+
+
+
 
 
 bot.polling()
