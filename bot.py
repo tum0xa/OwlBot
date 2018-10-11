@@ -73,6 +73,7 @@ def batch_save_sticker(message: Message):
     if message.content_type == telebot.types.Sticker:
         sticker = save_sticker_to_file(message.sticker, chat_id)
         f = open(f'{chat_id}.txt', 'w')
+        f.writelines('')
         f.close()
     else:
         bot.send_message(chat_id, 'Ожидаю только стикеры. Для завершения приема наберите /batch_sticker_end')
@@ -84,7 +85,7 @@ def batch_send_sticker(message: Message):
 
     with open(f'{chat_id}.txt', 'r') as sticker_list:
         for stiker_file_path in sticker_list.readlines():
-            sticker_file = open(stiker_file_path, 'rb')
+            sticker_file = open(stiker_file_path[:-1], 'rb')
             bot.send_photo(chat_id, sticker_file)
             sticker_file.close()
 
@@ -135,7 +136,6 @@ def save_sticker_to_file(sticker: Sticker, chat_id):
 
     with open(f'{chat_id}.txt', 'a') as sticker_list:
         sticker_list.writelines(file_local_path+'\n')
-
     sticker_dict = {'file_path': file_local_path, 'emoji': emoji}
     return sticker_dict
 
