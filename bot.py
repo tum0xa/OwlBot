@@ -1,4 +1,5 @@
 import requests
+import os
 
 import telebot
 from telebot.types import Message
@@ -90,12 +91,16 @@ def save_sticker(message: Message):
 
     sticker_resp = requests.get(f'https://api.telegram.org/file/bot{TOKEN}/{file_info.file_path}', proxies=proxies)
 
-    with open('.'.join([file_id, ext]), 'wb') as sticker_file:
+    file_local_path = '.'.join([file_id, ext])
+
+    with open(file_local_path, 'wb') as sticker_file:
         sticker_file.write(sticker_resp.content)
 
-    with open('.'.join([file_id, ext]), 'rb') as sticker_file:
+    with open(file_local_path, 'rb') as sticker_file:
         bot.send_message(chat_id, f'{emoji}')
         bot.send_photo(chat_id, sticker_file)
+
+    os.remove(file_local_path)
 
 
 
