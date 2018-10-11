@@ -2,7 +2,7 @@ import requests
 import os
 
 import telebot
-from telebot.types import Message
+from telebot.types import Message, Sticker
 from telebot import apihelper
 
 
@@ -66,6 +66,29 @@ def send_welcome(message: Message):
     bot.send_message(chat_id, HELP_TEXT)
 
 
+@bot.message_handler(commands=['batch_sticker_start'])
+def batch_save_sticker(message: Message):
+    chat_id = message.chat.id
+    bot.send_message(chat_id, 'Пришлите любое количество стикеров.')
+    if message.content_type == telebot.types.Sticker:
+        sticker = save_sticker_to_file(message.sticker, chat_id)
+        f = open(f'{chat_id}.txt', 'w')
+        f.close()
+    else:
+        bot.send_message(chat_id, 'Ожидаю только стикеры. Для завершения приема наберите /batch_sticker_end')
+
+
+@bot.message_handler(commands=['batch_sticker_end'])
+def batch_send_sticker(message: Message):
+    chat_id = message.chat.id
+
+    with open(f'{chat_id}.txt', 'r') as sticker_list:
+        for stiker_file_path in sticker_list.readlines():
+            sticker_file = open(stiker_file_path, 'rb')
+            bot.send_photo(chat_id, sticker_file)
+            sticker_file.close()
+
+
 @bot.message_handler(func=lambda message: True)
 def reply_accept(message: Message):
     chat_id = message.chat.id
@@ -76,18 +99,32 @@ def reply_accept(message: Message):
 
 
 @bot.message_handler(content_types=['sticker'])
-def save_sticker(message: Message):
-
+def sticker_to_image(message: Message):
     chat_id = message.chat.id
 
-    sticker_str = str(message.sticker)
-    sticker = eval(sticker_str)  # type dict
-
-    file_id = sticker['file_id']
+    sticker = save_sticker_to_file(message.sticker, chat_id)
+    sticker_file_path = sticker['file_path']
     emoji = sticker['emoji']
+
+    with open(sticker_file_path, 'rb') as sticker_file:
+        bot.send_message(chat_id, f'{emoji}')
+        bot.send_photo(chat_id, sticker_file)
+
+    os.remove(sticker_file_path)
+
+
+
+
+
+def save_sticker_to_file(sticker: Sticker, chat_id):
+    sticker_str = str(sticker)
+    sticker_dict = eval(sticker_str)  # type dict
+
+    file_id = sticker_dict['file_id']
+    emoji = sticker_dict['emoji']
     file_info = bot.get_file(file_id)
     file_path_list = file_info.file_path.split('.')
-    ext = file_path_list[len(file_path_list)-1]
+    ext = file_path_list[len(file_path_list) - 1]
 
     sticker_resp = requests.get(f'https://api.telegram.org/file/bot{TOKEN}/{file_info.file_path}', proxies=proxies)
 
@@ -96,15 +133,11 @@ def save_sticker(message: Message):
     with open(file_local_path, 'wb') as sticker_file:
         sticker_file.write(sticker_resp.content)
 
-    with open(file_local_path, 'rb') as sticker_file:
-        bot.send_message(chat_id, f'{emoji}')
-        bot.send_photo(chat_id, sticker_file)
+    with open(f'{chat_id}.txt', 'a') as sticker_list:
+        sticker_list.writelines(file_local_path+'\n')
 
-    os.remove(file_local_path)
-
-
-
-
+    sticker_dict = {'file_path': file_local_path, 'emoji': emoji}
+    return sticker_dict
 
 
 bot.polling()
