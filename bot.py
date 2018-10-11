@@ -3,8 +3,8 @@ from telebot.types import Message
 from telebot import apihelper
 
 
-PROXY = 'https://user:password@80.154.109.12:54219'
-TOKEN = '698617737:AAGBqrx8VlE7aMa7KWQGBZdfPWHuKUrCDw!M'
+PROXY = 'https://user:password@188.40.149.69:36941'
+TOKEN = '698617737:AAGBqrx8VlE7aMa7KWQGBZdfPWHuKUrCDwM'
 ACCEPT = 'подтверди'
 JOKE = '''
 Царь позвал к себе Иванушку-дурака и говорит:
@@ -20,6 +20,19 @@ JOKE = '''
 Филин:
 – Подтверждаю.
 '''
+
+HELP_TEXT = '''
+Доступные команды:
+/joke - Рассказать анекдот
+/start - Приветствие
+/sleep - Сказать спокойной ночи
+/help - Вывести это сообщение
+
+Чтобы запросить потверждение чего либо от Совы, просто напишите "Подтверди <ваш текст>". 
+Неважно в какой части сообщения и в каком регистре указано слово "Подтверди". 
+При любом другом сообщении Сова будет угукать.
+'''
+
 apihelper.proxy = {'https': PROXY}
 
 bot = telebot.TeleBot(TOKEN)
@@ -42,6 +55,10 @@ def send_welcome(message: Message):
     chat_id = message.chat.id
     bot.send_message(chat_id, "Спокойной ночи! Угу.")
 
+@bot.message_handler(commands=['help'])
+def send_welcome(message: Message):
+    chat_id = message.chat.id
+    bot.send_message(chat_id, HELP_TEXT)
 
 @bot.message_handler(func=lambda message: True)
 def reply_accept(message: Message):
